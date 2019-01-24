@@ -4,10 +4,11 @@ const apiai = require('apiai');
 const mongoose = require('mongoose');
 const Agent = require('./models/agent');
 
+require('dotenv').config();
+const config = require('./config/config');
+
 
 let message = 'Hola';     // peticion default para el servidor
-
-require('dotenv').config();
 const app = express();
 
 
@@ -26,7 +27,7 @@ app.use(bodyParser.json());
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.post('/send-messages',function(req,res,next) {
+app.post('/send-messages',config._checkToken,function(req,res,next) {
     
     if(req.body.UserMsg) message = req.body.UserMsg;
 
@@ -42,11 +43,11 @@ app.post('/send-messages',function(req,res,next) {
         });
         
         request.on('response', function(response) {
-            res.status(200).json(response.result.fulfillment['speech']);
+            return res.status(200).json(response.result.fulfillment['speech']);
         });
     
         request.on('error', function(error) {
-            res.status(501).json(error);
+            return res.status(501).json(error);
         });
     
         request.end();
@@ -55,18 +56,18 @@ app.post('/send-messages',function(req,res,next) {
     next();*/// pruebas de rendimiento
 });
 
-app.post('/create-agent',function(req,res) { 
+app.post('/create-agent',config._checkToken,function(req,res) { 
   
     var agent = new Agent({
-        agentName: req.body.name,
-        agentToken: req.body.token,
+        agentName: req.body.Name,
+        agentToken: req.body.ClientToken,
         agentStatus: true,
-        agentSession: req.body.name+'Session'
+        agentSession: req.body.Name+'Session'
     });
     
     agent.save(function(err,result){
-        if(err) res.status(504).json(err);
-        res.status(200).json(result);     
+        if(err) return res.status(504).json(err);
+        return res.status(200).json("Agent succesfully created");     
     }); 
 
 });
