@@ -7,8 +7,10 @@ const Agent = require('./models/agent');
 require('dotenv').config();
 const config = require('./config/config');
 
+let AgentNameLocal = "locx4d4SW";
+let AgentTokenLocal = "n7Ab$SWS4r"
+let AgentSessionLocal = "d4rAc4jd54&"
 
-let message = 'Hola';     // peticion default para el servidor
 const app = express();
 
 
@@ -27,22 +29,17 @@ app.use(bodyParser.json());
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.post('/send-messages',config._checkToken,function(req,res,next) {
+app.post('/send-messages',config._checkToken,config._reviewBasics,function(req,res,next) {
     
-    if(req.body.UserMsg) message = req.body.UserMsg;
+    if( AgentNameLocal === req.body.UserName ){
 
-    Agent.findOne({agentName: req.body.UserName},function(error,myagent){
+        let dialogflow = apiai(AgentTokenLocal);
 
-        if(error) return res.status(501).json(error);
-        if(myagent == null) return res.status(404).json('agent not found');
-
-        let dialogflow = apiai(myagent.agentToken);
-
-        var request = dialogflow.textRequest(message, {
-            sessionId: myagent.agentSession || 'M4ND78ND'
+        var request = dialogflow.textRequest(req.body.UserMsg, {
+            sessionId: AgentSessionLocal || 'M4ND78ND'
         });
-        
-        request.on('response', function(response) {
+
+        request.on('response', function(response) {     
             return res.status(200).json(response.result.fulfillment['speech']);
         });
     
@@ -51,9 +48,36 @@ app.post('/send-messages',config._checkToken,function(req,res,next) {
         });
     
         request.end();
-    });
-    /*res.status(200).json(z);
-    next();*/// pruebas de rendimiento
+
+    }else{
+        
+        Agent.findOne({agentName: req.body.UserName},function(error,myagent){
+
+            if(error) return res.status(501).json(error);
+            if(myagent == null) return res.status(404).json('agent not found');
+
+            AgentNameLocal = myagent.agentName;
+            AgentSessionLocal = myagent.agentSession;
+            AgentTokenLocal = myagent.agentToken;
+    
+            let dialogflow = apiai(myagent.agentToken);
+    
+            var request = dialogflow.textRequest(req.body.UserMsg, {
+                sessionId: myagent.agentSession || 'M4ND78ND'
+            });
+            
+            request.on('response', function(response) {        
+                return res.status(200).json(response.result.fulfillment['speech']);
+            });
+        
+            request.on('error', function(error) {
+                return res.status(501).json(error);
+            });
+        
+            request.end();
+        });
+    }
+
 });
 
 app.post('/create-agent',config._checkToken,function(req,res) { 
