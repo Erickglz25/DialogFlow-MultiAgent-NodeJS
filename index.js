@@ -11,9 +11,7 @@ let AgentNameLocal = "locx4d4SW";
 let AgentTokenLocal = "n7Ab$SWS4r"
 let AgentSessionLocal = "d4rAc4jd54&"
 
-let z =0;
 const app = express();
-
 
 mongoose.set('useCreateIndex', true)
 mongoose.connect(process.env.MONGODB_URI,{ useNewUrlParser: true });
@@ -31,7 +29,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post('/send-messages',config._checkToken,config._reviewBasics,function(req,res,next) {
-    console.log(z++);
     
     if( AgentNameLocal === req.body.UserName ){
 
@@ -42,7 +39,6 @@ app.post('/send-messages',config._checkToken,config._reviewBasics,function(req,r
         });
 
         request.on('response', function(response) { 
-            console.log(response.result.metadata.isFallbackIntent,response.result.metadata.intentName);
             
             if (response.result.metadata.isFallbackIntent === 'true'  || response.result.metadata.intentName === 'support.problem')
                 return res.status(201).json("Bot Asking For Help"); 
@@ -73,7 +69,11 @@ app.post('/send-messages',config._checkToken,config._reviewBasics,function(req,r
                 sessionId: myagent.agentSession || 'M4ND78ND'
             });
             
-            request.on('response', function(response) {        
+            request.on('response', function(response) {     
+                
+                if (response.result.metadata.isFallbackIntent === 'true'  || response.result.metadata.intentName === 'support.problem')
+                    return res.status(201).json("Bot Asking For Help"); 
+                
                 return res.status(200).json(response.result.fulfillment['speech']);
             });
         
@@ -118,3 +118,4 @@ app.use(function(err, req, res, next) {
     next();
   });
 
+  
