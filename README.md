@@ -3,6 +3,8 @@
 
 ### Funciones y rutas
 
+**Async/Await Version:same logic improved performance: factor 1.4**
+
 **app.post('/send-messages')**
 
 La ruta /send-messages recibe 3 parametros, el token de acceso, el nombre del agente(bot) como aparece en la base de datos, y el mensaje que se procesará 
