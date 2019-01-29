@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const apiai = require('apiai');
 const mongoose = require('mongoose');
 const Agent = require('./models/agent');
+const Promise = require('promise');
 
 require('dotenv').config();
 const config = require('./config/config');
@@ -88,18 +89,50 @@ app.post('/send-messages',config._checkToken,config._reviewBasics,function(req,r
 });
 
 app.post('/create-agent',config._checkToken,function(req,res) { 
-  
+    
     var agent = new Agent({
         agentName: req.body.Name,
         agentToken: req.body.ClientToken,
         agentStatus: true,
         agentSession: req.body.Name+'Session'
     });
-    
-    agent.save(function(err,result){
-        if(err) return res.status(504).json(err);
-        return res.status(200).json("Agent succesfully created");     
-    }); 
+
+    return new Promise((res,rej) =>{
+        agent.save(function(err,result){
+            if(err) rej(err);
+            res();     
+        }); 
+    }).then(()=>{
+        return res.status(200).json('Agent succesfully created inside a promise');
+    })
+    .catch((err) => {
+       return res.status(403).json(err);
+    });
+
+    /*ejemplo de promesas y conexion a la base de datos en sandbox
+    function saveagent(){
+        return new Promise(
+            (resolve,reject)=>{
+                let x = 5;
+                resolve(x);
+            })
+    }
+
+    saveagent()
+        .then((result) => {
+            console.log(result);
+            return result;
+        })
+        .then((result2)=>{
+            result2+=1;
+            console.log(result2);
+            return res.send('ok');
+        })
+        .catch((err) => {
+            console.log(err);
+           return res.send('bad');
+        });
+    */
 
 });
 
