@@ -109,31 +109,6 @@ app.post('/create-agent',config._checkToken,function(req,res) {
        return res.status(403).json(err);
     });
 
-    /*ejemplo de promesas y conexion a la base de datos en sandbox
-    function saveagent(){
-        return new Promise(
-            (resolve,reject)=>{
-                let x = 5;
-                resolve(x);
-            })
-    }
-
-    saveagent()
-        .then((result) => {
-            console.log(result);
-            return result;
-        })
-        .then((result2)=>{
-            result2+=1;
-            console.log(result2);
-            return res.send('ok');
-        })
-        .catch((err) => {
-            console.log(err);
-           return res.send('bad');
-        });
-    */
-
 });
 
 app.listen((process.env.PORT || 3000), () => {
