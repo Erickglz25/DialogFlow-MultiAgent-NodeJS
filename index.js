@@ -11,7 +11,7 @@ const config = require('./config/config');
 let AgentNameLocal = "locx4d4SW";
 let AgentTokenLocal = "n7Ab$SWS4r"
 let AgentSessionLocal = "d4rAc4jd54&"
-let z =0;
+
 
 const app = express();
 
@@ -33,7 +33,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.post('/send-messages',config._checkToken,config._reviewBasics,function(req,res,next) {
     
     if( AgentNameLocal === req.body.UserName ){
-        console.log(z++);
+
         
         function getDialogFlow(){  
             return new Promise((res,rej) =>{
