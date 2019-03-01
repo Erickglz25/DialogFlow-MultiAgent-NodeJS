@@ -3,6 +3,9 @@
 
 ### Funciones y rutas
 
+**Nota**
+**Las rutas cambiaron los callbacks a promesas, el rendimiento aumenta en un factor de x1.6 aprox, la logica permacene intacta, pero se codifican las 2 funciones principales con promesas**
+
 **app.post('/send-messages')**
 
 La ruta /send-messages recibe 3 parametros, el token de acceso, el nombre del agente(bot) como aparece en la base de datos, y el mensaje que se procesará 

@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const apiai = require('apiai');
 const mongoose = require('mongoose');
 const Agent = require('./models/agent');
+const Promise = require('promise');
 
 require('dotenv').config();
 const config = require('./config/config');
@@ -10,6 +11,7 @@ const config = require('./config/config');
 let AgentNameLocal = "locx4d4SW";
 let AgentTokenLocal = "n7Ab$SWS4r"
 let AgentSessionLocal = "d4rAc4jd54&"
+let z =0;
 
 const app = express();
 
@@ -31,75 +33,142 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.post('/send-messages',config._checkToken,config._reviewBasics,function(req,res,next) {
     
     if( AgentNameLocal === req.body.UserName ){
+        console.log(z++);
+        
+        function getDialogFlow(){  
+            return new Promise((res,rej) =>{
+ 
+                var request = apiai(AgentTokenLocal).textRequest(req.body.UserMsg, {
+                    sessionId: req.body.UserName+'session'
+                });
 
-        let dialogflow = apiai(AgentTokenLocal);
+                res(request);
+            })
+        }
+    
+        getDialogFlow()
 
-        var request = dialogflow.textRequest(req.body.UserMsg, {
-            sessionId: AgentSessionLocal || 'M4ND78ND'
-        });
-
-        request.on('response', function(response) { 
+            .then((request)=>{
+        
+                request.on('response', function(response) { 
+                    
+                    if (response.result.metadata.isFallbackIntent === 'true'  || response.result.metadata.intentName === 'support.problem')
+                        return res.status(201).json("Bot Asking For Help"); 
+        
+                    return res.status(200).json(response.result.fulfillment['speech']);
+                });
             
-            if (response.result.metadata.isFallbackIntent === 'true'  || response.result.metadata.intentName === 'support.problem')
-                return res.status(201).json("Bot Asking For Help"); 
-
-            return res.status(200).json(response.result.fulfillment['speech']);
-        });
-    
-        request.on('error', function(error) {
-            return res.status(501).json(error);
-        });
-    
-        request.end();
+                request.on('error', function(error) {
+                    return res.status(501).json(error);
+                });
+            
+                request.end();
+            })
+            .catch((err) => {
+                return res.status(403).json(err);
+            });
 
     }else{
+                
+        function SaveAgent(){  
+            return new Promise((res,rej) =>{
+
+                Agent.findOne({agentName: req.body.UserName},function(error,myagent){
+                    
+                    if(error) rej(error);
+                    if(myagent == null) rej('agent not found');
         
-        Agent.findOne({agentName: req.body.UserName},function(error,myagent){
+                    res(myagent);     
+                }); 
+            })
+        }
+        
+        SaveAgent()
+            .then((myagent) => {
+        
+                AgentNameLocal = myagent.agentName;
+                AgentSessionLocal = myagent.agentSession;
+                AgentTokenLocal = myagent.agentToken;
 
-            if(error) return res.status(501).json(error);
-            if(myagent == null) return res.status(404).json('agent not found');
+                let dialogflow = apiai(myagent.agentToken);
+                return dialogflow;
 
-            AgentNameLocal = myagent.agentName;
-            AgentSessionLocal = myagent.agentSession;
-            AgentTokenLocal = myagent.agentToken;
-    
-            let dialogflow = apiai(myagent.agentToken);
-    
-            var request = dialogflow.textRequest(req.body.UserMsg, {
-                sessionId: myagent.agentSession || 'M4ND78ND'
-            });
+            })
+            .then((dialogflow)=>{
+                var request = dialogflow.textRequest(req.body.UserMsg, {
+                    sessionId: req.body.UserName+'session' || 'M4ND78ND'
+                });
+                return request;
+            })
+            .then((request)=>{
+        
+                request.on('response', function(response) {     
+                        
+                    if (response.result.metadata.isFallbackIntent === 'true'  || response.result.metadata.intentName === 'support.problem')
+                        return res.status(201).json("Bot Asking For Help"); 
+
+                    return res.status(200).json(response.result.fulfillment['speech']);
+                });
             
-            request.on('response', function(response) {     
-                
-                if (response.result.metadata.isFallbackIntent === 'true'  || response.result.metadata.intentName === 'support.problem')
-                    return res.status(201).json("Bot Asking For Help"); 
-                
-                return res.status(200).json(response.result.fulfillment['speech']);
-            });
+                request.on('error', function(error) {
+                    return res.status(500).json(error);
+                });
+            
+                request.end();
         
-            request.on('error', function(error) {
-                return res.status(501).json(error);
+            })
+            .catch((err) => {
+                return res.status(403).json(err);
             });
-        
-            request.end();
-        });
     }
 
 });
 
 app.post('/create-agent',config._checkToken,function(req,res) { 
-  
+    
     var agent = new Agent({
         agentName: req.body.Name,
         agentToken: req.body.ClientToken,
         agentStatus: true,
         agentSession: req.body.Name+'Session'
     });
-    
-    agent.save(function(err,result){
-        if(err) return res.status(504).json(err);
-        return res.status(200).json("Agent succesfully created");     
-    }); 
+
+    return new Promise((res,rej) =>{
+        agent.save(function(err,result){
+            if(err) rej(err);
+            res();     
+        }); 
+    }).then(()=>{
+        return res.status(200).json('Agent succesfully created inside a promise');
+    })
+    .catch((err) => {
+       return res.status(403).json(err);
+    });
+
+    /*ejemplo de promesas y conexion a la base de datos en sandbox
+    function saveagent(){
+        return new Promise(
+            (resolve,reject)=>{
+                let x = 5;
+                resolve(x);
+            })
+    }
+
+    saveagent()
+        .then((result) => {
+            console.log(result);
+            return result;
+        })
+        .then((result2)=>{
+            result2+=1;
+            console.log(result2);
+            return res.send('ok');
+        })
+        .catch((err) => {
+            console.log(err);
+           return res.send('bad');
+        });
+    */
 
 });
 
